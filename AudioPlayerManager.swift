@@ -31,10 +31,15 @@ class CustomAVPlayer: AVAudioPlayer {
 class AudioPlayerManager: NSObject, AVAudioPlayerDelegate {
 
     static let shared = AudioPlayerManager()
-
     private var playerPool: [CustomAVPlayer] = []
 
-    func playSound(fileName: String, tag: Int = 0, completion: (()->())? = nil) {
+    func playSound(fileName: String, tag: Int = 0, exclusively: Bool = true, completion: (()->())? = nil) {
+        if exclusively == true {
+            if self.playerPoolContains(fileName: fileName) == true {
+                return
+            }
+        }
+
         let player = self.createPlayer(fileName: fileName)
         player?.tag = tag
         player?.completion = completion
@@ -43,12 +48,18 @@ class AudioPlayerManager: NSObject, AVAudioPlayerDelegate {
         player?.play()
     }
 
-    func loopSound(fileName: String, tag: Int = 0, completion: (()->())? = nil) {
+    func loopSound(fileName: String, tag: Int = 0, exclusively: Bool = true, loops: Int = -1, completion: (()->())? = nil) {
+        if exclusively == true {
+            if self.playerPoolContains(fileName: fileName) == true {
+                return
+            }
+        }
+
         let player = self.createPlayer(fileName: fileName)
         player?.tag = tag
         player?.completion = completion
         player?.delegate = self
-        player?.numberOfLoops = -1;
+        player?.numberOfLoops = loops;
         player?.prepareToPlay()
         player?.play()
     }
@@ -59,13 +70,13 @@ class AudioPlayerManager: NSObject, AVAudioPlayerDelegate {
         }
     }
 
-    func players(withFileName fileName: String) -> [CustomAVPlayer] {
+    fileprivate func players(withFileName fileName: String) -> [CustomAVPlayer] {
         return playerPool.filter({
             self.fileNameOnly($0.url?.absoluteString) == self.fileNameOnly(fileName)
         })
     }
 
-    func players(withTag tag: Int) -> [CustomAVPlayer] {
+    fileprivate func players(withTag tag: Int) -> [CustomAVPlayer] {
         return playerPool.filter({
             $0.tag == tag
         })
@@ -81,7 +92,7 @@ class AudioPlayerManager: NSObject, AVAudioPlayerDelegate {
         self.playOrPauseSound(players: players)
     }
 
-    func playOrPauseSound(players: [CustomAVPlayer]) {
+    fileprivate func playOrPauseSound(players: [CustomAVPlayer]) {
         for player in players {
             if player.isPlaying {
                 player.pause()
@@ -91,22 +102,42 @@ class AudioPlayerManager: NSObject, AVAudioPlayerDelegate {
         }
     }
 
-    func playerPoolContains(fileName: String) -> Bool {
+    fileprivate func playerPoolContains(fileName: String) -> Bool {
         var containsFileName = false
         containsFileName = self.players(withFileName: fileName).count > 0
         return containsFileName
     }
 
-    func stopAllSounds() {}
-    func stopAllSounds(exceptFileNames: [String] = [], exceptTags: [Int] = []) {}
+    func stopAllSounds() {
+        self.playerPool.forEach({ $0.stop() })
+    }
 
-    func pauseAllSounds() {}
+    func stopAllSounds(exceptFileNames: [String] = [], exceptTags: [Int] = []) {
+        self.playerPool.forEach({ $0.stop() })
+    }
+
+    func pauseAllSounds() {
+        self.playerPool.forEach({ $0.pause() })
+    }
+
     func pauseAllSounds(exceptFileNames: [String] = [], exceptTags: [Int] = []) {}
 
-    func applyVolumeToAllSounds(exceptFileNames: [String] = [], exceptTags: [Int] = []) {}
-    func applyVolumeToSelectedSounds(fileNames: [String] = [], tags: [Int] = []) {}
+    func applyVolumeToAllSounds(_ volume: Float, exceptFileNames: [String] = [], exceptTags: [Int] = []) {
+        self.playerPool.forEach({ $0.volume = volume })
+    }
 
-    func fileNameOnly(_ fileName: String?) -> String {
+    func applyVolumeToSelectedSounds(_ volume: Float, fileNames: [String] = [], tags: [Int] = []) {
+        self.playerPool.forEach({ $0.volume = volume })
+    }
+
+    func stopSound(tag: Int = 0) {
+        let players = self.players(withTag: tag)
+        players.forEach({ $0.stop() })
+
+        self.playerPool.removeAll(where: {$0.tag == tag})
+    }
+
+    fileprivate func fileNameOnly(_ fileName: String?) -> String {
         guard let fileName = fileName else {
             return ""
         }
@@ -114,7 +145,7 @@ class AudioPlayerManager: NSObject, AVAudioPlayerDelegate {
         return String(tempFileName.lastPathComponent)
     }
 
-    func createPlayer(fileName:String) -> CustomAVPlayer? {
+    fileprivate func createPlayer(fileName:String) -> CustomAVPlayer? {
         if fileName.isEmpty {
             return nil
         }
@@ -137,6 +168,8 @@ class AudioPlayerManager: NSObject, AVAudioPlayerDelegate {
         if let player = self.playerPool.filter({ $0 == player }).first {
             let fileName = NSString(string: player.url?.absoluteString ?? "").lastPathComponent
             print("finished playing sound for \(fileName)")
+            //call completion block
+            player.completion?()
             //remove from pool
             _ = self.playerPool.firstIndex(of: player).map { self.playerPool.remove(at: $0) }
         }
