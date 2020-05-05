@@ -16,15 +16,30 @@ AudioPlayerManager.shared.loopSound(fileName: "song18.mp3")
 ### Play sound exclusively
 Sound of the same file name cant be played while another one is playing
 ```swift
-AudioPlayerManager.shared.playSoundExclusively(fileName: "powerup11.m4a")
+AudioPlayerManager.shared.playSound(fileName: "powerup11.m4a", exclusively: true)
 ```
+### Play or pause sound
+```swift
+//with filename
+AudioPlayerManager.shared.playOrPauseSound(fileName: "powerup14.m4a")
+//with tag
+AudioPlayerManager.shared.playOrPauseSound(tag: 1)
+```
+### Stop/pause all sounds
+```swift
+AudioPlayerManager.shared.stopAllSounds()
 
-- Play or pause sound
-- Stop all sounds
-- Stop all sound except (file name, tag)
-- Pause all sounds
-- Pause all sounds except (file name, tag)
-- Apply volume to all sounds
-- Apply volume to all sounds with file name or tag
+AudioPlayerManager.shared.pauseAllSounds()
+```
+### Stop/pause all sound except (file name, tag)
+```swift
+AudioPlayerManager.shared.stopAllSounds()
+
+AudioPlayerManager.shared.pauseAllSounds()
+```
+### Apply volume to all sounds
+```swift
+AudioPlayerManager.shared.applyVolumeToAllSounds(volume: 1.0)
+```
 
 
