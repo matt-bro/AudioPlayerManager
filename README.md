@@ -21,7 +21,7 @@ Dependend on the needs I can play the sounds exclusively (same sound cant be pla
 * Play a sound as a loop
 * Apply volume to selected sounds
 
-## Functions
+## Examples
 
 ```swift
 // Play sound with file name or tag
